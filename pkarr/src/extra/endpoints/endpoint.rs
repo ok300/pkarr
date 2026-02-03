@@ -18,7 +18,7 @@ pub struct Endpoint {
     port: u16,
     /// SocketAddrs from the [SignedPacket]
     addrs: Vec<IpAddr>,
-    params: BTreeMap<u16, Box<[u8]>>,
+    params: BTreeMap<u16, SVCParam<'static>>,
 }
 
 impl Endpoint {
@@ -90,8 +90,7 @@ impl Endpoint {
                         .iter_params()
                         .map(|param| {
                             let key = param.key_code();
-                            let value = svcparam_to_bytes(param);
-                            (key, value)
+                            (key, param.clone().into_owned())
                         })
                         .collect(),
                 }
@@ -162,8 +161,14 @@ impl Endpoint {
     }
 
     /// Returns a service parameter.
-    pub fn get_param(&self, key: u16) -> Option<&[u8]> {
-        self.params.get(&key).map(|v| v.as_ref())
+    pub fn get_param(&self, key: u16) -> Option<&SVCParam<'static>> {
+        self.params.get(&key)
+    }
+
+    /// Returns a service parameter as raw bytes (for backward compatibility).
+    /// This serializes the parameter value on each call.
+    pub fn get_param_bytes(&self, key: u16) -> Option<Vec<u8>> {
+        self.params.get(&key).map(svcparam_to_bytes)
     }
 }
 
@@ -189,14 +194,14 @@ fn get_svcb<'a>(record: &'a ResourceRecord, get_https: bool) -> Option<&'a SVCB<
 }
 
 /// Converts an SVCParam to its value bytes (without key and length prefix)
-fn svcparam_to_bytes(param: &SVCParam) -> Box<[u8]> {
+fn svcparam_to_bytes(param: &SVCParam) -> Vec<u8> {
     match param {
         SVCParam::Mandatory(keys) => {
             let mut bytes = Vec::new();
             for key in keys {
                 bytes.extend_from_slice(&key.to_be_bytes());
             }
-            bytes.into_boxed_slice()
+            bytes
         }
         SVCParam::Alpn(alpns) => {
             let mut bytes = Vec::new();
@@ -207,37 +212,37 @@ fn svcparam_to_bytes(param: &SVCParam) -> Box<[u8]> {
                 bytes.push(data.len() as u8);
                 bytes.extend_from_slice(data);
             }
-            bytes.into_boxed_slice()
+            bytes
         }
-        SVCParam::NoDefaultAlpn => Box::new([]),
+        SVCParam::NoDefaultAlpn => Vec::new(),
         SVCParam::Port(port) => {
-            port.to_be_bytes().to_vec().into_boxed_slice()
+            port.to_be_bytes().to_vec()
         }
         SVCParam::Ipv4Hint(ips) => {
             let mut bytes = Vec::new();
             for ip in ips {
                 bytes.extend_from_slice(&ip.to_be_bytes());
             }
-            bytes.into_boxed_slice()
+            bytes
         }
         SVCParam::Ech(data) => {
             // ECH includes length prefix in its encoding
             let mut bytes = Vec::new();
             bytes.extend_from_slice(&(data.len() as u16).to_be_bytes());
             bytes.extend_from_slice(data.as_ref());
-            bytes.into_boxed_slice()
+            bytes
         }
         SVCParam::Ipv6Hint(ips) => {
             let mut bytes = Vec::new();
             for ip in ips {
                 bytes.extend_from_slice(&ip.to_be_bytes());
             }
-            bytes.into_boxed_slice()
+            bytes
         }
         SVCParam::Unknown(_, data) => {
-            data.as_ref().to_vec().into_boxed_slice()
+            data.as_ref().to_vec()
         }
-        SVCParam::InvalidKey => Box::new([]),
+        SVCParam::InvalidKey => Vec::new(),
     }
 }
 
