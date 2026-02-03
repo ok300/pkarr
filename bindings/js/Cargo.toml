@@ -29,7 +29,7 @@ wasm-bindgen-futures = "0.4.50"
 simple-dns = { version = "0.9.3" }
 ntimestamp = { version = "1.0.0", features = ["full"] }
 thiserror = "2.0.11"
-url = { version = "2.5.4" }
+url = { version = "2.5.8" }
 futures-lite = { version = "2.6.0", default-features = false, features = ["std"] }
 
 # Required for WASM target
