@@ -90,7 +90,7 @@ rstest = "0.24.0"
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 pkarr-relay = { path = "../relay" }
 clap = { version = "4.5.29", features = ["derive"] }
-tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
 mainline = "6.0.1"
 tempfile = "3.20"
 tokio-rustls = { version = "0.26.1", default-features = false }

@@ -22,7 +22,7 @@ axum = "0.8.1"
 tokio = { version = "1.43.0", features = ["full"] }
 tower-http = { version = "0.6.2", features = ["cors", "trace"] }
 tracing = "0.1.41"
-tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
 axum-server = { version = "0.8", features = ["tls-rustls-no-provider"] }
 rustls = { workspace = true }
 http = "1.2.0"
