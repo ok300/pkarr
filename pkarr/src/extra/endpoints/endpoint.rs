@@ -1,6 +1,6 @@
 use crate::{
     dns::{
-        rdata::{RData, SVCB},
+        rdata::{RData, SVCB, SVCParam},
         ResourceRecord,
     },
     PublicKey, SignedPacket,
@@ -65,13 +65,13 @@ impl Endpoint {
                 };
 
                 let port = s
-                    .get_param(SVCB::PORT)
-                    .map(|bytes| {
-                        let mut arr = [0_u8; 2];
-                        arr[0] = bytes[0];
-                        arr[1] = bytes[1];
-
-                        u16::from_be_bytes(arr)
+                    .get_param(3) // PORT parameter key code
+                    .and_then(|param| {
+                        if let SVCParam::Port(port) = param {
+                            Some(*port)
+                        } else {
+                            None
+                        }
                     })
                     .unwrap_or_default();
 
@@ -88,7 +88,11 @@ impl Endpoint {
                     addrs,
                     params: s
                         .iter_params()
-                        .map(|(key, value)| (key, value.into()))
+                        .map(|param| {
+                            let key = param.key_code();
+                            let value = svcparam_to_bytes(param);
+                            (key, value)
+                        })
                         .collect(),
                 }
             })
@@ -181,6 +185,59 @@ fn get_svcb<'a>(record: &'a ResourceRecord, get_https: bool) -> Option<&'a SVCB<
             }
         }
         _ => None,
+    }
+}
+
+/// Converts an SVCParam to its value bytes (without key and length prefix)
+fn svcparam_to_bytes(param: &SVCParam) -> Box<[u8]> {
+    match param {
+        SVCParam::Mandatory(keys) => {
+            let mut bytes = Vec::new();
+            for key in keys {
+                bytes.extend_from_slice(&key.to_be_bytes());
+            }
+            bytes.into_boxed_slice()
+        }
+        SVCParam::Alpn(alpns) => {
+            let mut bytes = Vec::new();
+            for alpn in alpns {
+                // CharacterString format: length byte + data
+                let s = alpn.to_string();
+                let data = s.as_bytes();
+                bytes.push(data.len() as u8);
+                bytes.extend_from_slice(data);
+            }
+            bytes.into_boxed_slice()
+        }
+        SVCParam::NoDefaultAlpn => Box::new([]),
+        SVCParam::Port(port) => {
+            port.to_be_bytes().to_vec().into_boxed_slice()
+        }
+        SVCParam::Ipv4Hint(ips) => {
+            let mut bytes = Vec::new();
+            for ip in ips {
+                bytes.extend_from_slice(&ip.to_be_bytes());
+            }
+            bytes.into_boxed_slice()
+        }
+        SVCParam::Ech(data) => {
+            // ECH includes length prefix in its encoding
+            let mut bytes = Vec::new();
+            bytes.extend_from_slice(&(data.len() as u16).to_be_bytes());
+            bytes.extend_from_slice(data.as_ref());
+            bytes.into_boxed_slice()
+        }
+        SVCParam::Ipv6Hint(ips) => {
+            let mut bytes = Vec::new();
+            for ip in ips {
+                bytes.extend_from_slice(&ip.to_be_bytes());
+            }
+            bytes.into_boxed_slice()
+        }
+        SVCParam::Unknown(_, data) => {
+            data.as_ref().to_vec().into_boxed_slice()
+        }
+        SVCParam::InvalidKey => Box::new([]),
     }
 }
 
