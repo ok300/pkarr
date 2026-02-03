@@ -22,7 +22,10 @@ pub fn to_js_object(svcb: &SVCB) -> Result<js_sys::Object, JsValue> {
         } else {
             // For unknown parameters, use the format "param{number}" with hex values
             let unknown_key = format!("param{}", key);
-            let hex_value = param_to_hex(param);
+            let hex_value = match param {
+                SVCParam::Unknown(_, data) => bytes_to_hex(data.as_ref()),
+                _ => bytes_to_hex(&[]), // This shouldn't happen for truly unknown params
+            };
             js_sys::Reflect::set(
                 &params_obj,
                 &JsValue::from_str(&unknown_key),
@@ -70,15 +73,6 @@ fn parse_param_value_from_param(param: &SVCParam) -> String {
         }
         SVCParam::Unknown(_, data) => bytes_to_hex(data.as_ref()),
         SVCParam::InvalidKey => String::from("invalid_key"),
-    }
-}
-
-/// Convert parameter to hex string for unknown parameters
-fn param_to_hex(param: &SVCParam) -> String {
-    match param {
-        SVCParam::Unknown(_, data) => bytes_to_hex(data.as_ref()),
-        SVCParam::Ech(data) => bytes_to_hex(data.as_ref()),
-        _ => String::from("unsupported_format"),
     }
 }
 
