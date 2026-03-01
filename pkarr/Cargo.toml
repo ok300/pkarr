@@ -34,7 +34,7 @@ ntimestamp = { version = "1.0.0", features = ["full"], optional = true }
 futures-lite = { version = "2.6.1", default-features = false, optional = true, features = [
   "std",
 ] }
-futures-buffered = { version = "0.2.12", optional = true }
+futures-buffered = { version = "0.2.13", optional = true }
 dyn-clone = { version = "1.0.20", optional = true }
 lru = { version = "0.16.3", default-features = false, optional = true }
 
