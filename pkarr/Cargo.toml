@@ -90,7 +90,7 @@ rstest = "0.26.1"
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 pkarr-relay = { path = "../relay" }
-clap = { version = "4.5.57", features = ["derive"] }
+clap = { version = "4.5.60", features = ["derive"] }
 tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
 mainline = "6.1.1"
 tempfile = "3.24.0"
